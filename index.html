@@ -32,12 +32,11 @@
         </div>
 
         <div class="chat-section">
-            <div class="chat-messages">
-                <div class="message"><strong>Admin:</strong> Всем привет, стрим скоро начнется!</div>
-            </div>
+            <div id="chat-messages" class="chat-messages">
+                </div>
             <div class="chat-input-area">
-                <input type="text" placeholder="Написать в чат..." class="chat-input">
-                <button class="send-btn">Отправить</button>
+                <input type="text" id="chat-input" placeholder="Написать в чат...">
+                <button onclick="sendMessage()">Отправить</button>
             </div>
         </div>
     </main>
@@ -67,6 +66,31 @@
             } else {
                 alert('Успешно! Ты в базе данных.');
             }
+        }
+    </script>
+    <script>
+        const supabaseUrl = 'https://duqfaqvamnplkohsmtin.supabase.co';
+        const supabaseKey = 'sb_publishable_b294NCNpkgQ0eJlvmo9A_yvcegY';
+        const supabase = supabaseClient.createClient(supabaseUrl, supabaseKey);
+
+        // Функция авторизации (твоя старая)
+        async function handleAuth() {
+            const nickname = document.getElementById('nickname').value;
+            const password = document.getElementById('password').value;
+            if (!nickname || !password) { alert('Введите ник и пароль!'); return; }
+            const { data, error } = await supabase.from('users').insert([{ nickname, password }]);
+            if (error) alert('Ошибка: ' + error.message);
+            else alert('Успешно!');
+        }
+
+        // Новая функция отправки сообщения
+        async function sendMessage() {
+            const nickname = document.getElementById('nickname').value;
+            const message = document.getElementById('chat-input').value;
+            if (!nickname) { alert('Сначала войди в аккаунт!'); return; }
+            
+            await supabase.from('chat').insert([{ sender: nickname, message: message }]);
+            document.getElementById('chat-input').value = '';
         }
     </script>
 </body>
