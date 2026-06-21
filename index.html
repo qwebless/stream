@@ -92,6 +92,25 @@
             await supabase.from('chat').insert([{ sender: nickname, message: message }]);
             document.getElementById('chat-input').value = '';
         }
+        // Функция для загрузки сообщений из базы
+        async function loadMessages() {
+            const { data, error } = await supabase
+                .from('chat')
+                .select('*')
+                .order('created_at', { ascending: true }); // сортировка по времени
+
+            if (data) {
+                const chatContainer = document.getElementById('chat-messages');
+                chatContainer.innerHTML = ''; // очищаем чат перед обновлением
+                data.forEach(msg => {
+                    chatContainer.innerHTML += `<div><strong>${msg.sender}:</strong> ${msg.message}</div>`;
+                });
+            }
+        }
+
+        // Запускаем обновление чата каждые 2 секунды
+        setInterval(loadMessages, 2000);
     </script>
+    
 </body>
 </html>
