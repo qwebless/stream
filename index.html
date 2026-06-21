@@ -2,115 +2,50 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stream Platform</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>Вход на сайт</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; padding-top: 100px; background: #f0f2f5; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    </style>
 </head>
 <body>
 
-    <header class="header">
-        <div class="logo">BRO.STREAM</div>
-        <div class="user-panel">
-            <div id="auth-form">
-                <input type="text" id="nickname" placeholder="Никнейм">
-                <input type="password" id="password" placeholder="Пароль">
-                <button onclick="handleAuth()">Войти / Регистрация</button>
-            </div>
-        </div>
-    </header>
+<div class="card">
+    <h2>Стрим-сервис</h2>
+    <button id="login">Войти через Google</button>
+</div>
 
-    <main class="container">
-        <div class="player-section">
-            <div class="video-placeholder">
-                <span>Плеер будет здесь</span>
-            </div>
-            <div class="stream-info">
-                <h1>Название стрима: Смотрим футбол</h1>
-                <p>Онлайн: 10</p>
-            </div>
-        </div>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        <div class="chat-section">
-            <div id="chat-messages" class="chat-messages">
-                </div>
-            <div class="chat-input-area">
-                <input type="text" id="chat-input" placeholder="Написать в чат...">
-                <button onclick="sendMessage()">Отправить</button>
-            </div>
-        </div>
-    </main>
+    // --- СЮДА ВСТАВЛЯЙ СВОИ КЛЮЧИ ИЗ КОНСОЛИ ---
+   const firebaseConfig = {
+  apiKey: "AIzaSyDMFw62BVm7Y12P8PVftSBayAZJUnpTgb0",
+  authDomain: "fatmonkey-cd4b8.firebaseapp.com",
+  projectId: "fatmonkey-cd4b8",
+  storageBucket: "fatmonkey-cd4b8.firebasestorage.app",
+  messagingSenderId: "540431910490",
+  appId: "1:540431910490:web:2235bd68684fabb26e3a63",
+  measurementId: "G-BNS4Y65D36"
+};
 
-    <script>
-        // Твои настройки
-        const supabaseUrl = 'https://duqfaqvamnplkohsmtin.supabase.co';
-        const supabaseKey = 'sb_publishable_b294NCNpkgQ0eJlvmo9A_yvcegY'; // Взял из твоего скрина
-        const supabase = supabaseClient.createClient(supabaseUrl, supabaseKey);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
 
-        async function handleAuth() {
-            const nickname = document.getElementById('nickname').value;
-            const password = document.getElementById('password').value;
+    document.getElementById('login').addEventListener('click', () => {
+        signInWithPopup(auth, provider)
+            .then((result) => {
+                console.log("Успех!", result.user);
+                alert("Привет, " + result.user.displayName);
+            })
+            .catch((error) => {
+                console.error("Ошибка:", error);
+                alert("Не вышло: " + error.message);
+            });
+    });
+</script>
 
-            if (!nickname || !password) {
-                alert('Введите ник и пароль!');
-                return;
-            }
-
-            // Отправляем данные в таблицу users
-            const { data, error } = await supabase
-                .from('users')
-                .insert([{ nickname: nickname, password: password }]);
-
-            if (error) {
-                alert('Ошибка: ' + error.message);
-            } else {
-                alert('Успешно! Ты в базе данных.');
-            }
-        }
-    </script>
-    <script>
-        const supabaseUrl = 'https://duqfaqvamnplkohsmtin.supabase.co';
-        const supabaseKey = 'sb_publishable_b294NCNpkgQ0eJlvmo9A_yvcegY';
-        const supabase = supabaseClient.createClient(supabaseUrl, supabaseKey);
-
-        // Функция авторизации (твоя старая)
-        async function handleAuth() {
-            const nickname = document.getElementById('nickname').value;
-            const password = document.getElementById('password').value;
-            if (!nickname || !password) { alert('Введите ник и пароль!'); return; }
-            const { data, error } = await supabase.from('users').insert([{ nickname, password }]);
-            if (error) alert('Ошибка: ' + error.message);
-            else alert('Успешно!');
-        }
-
-        // Новая функция отправки сообщения
-        async function sendMessage() {
-            const nickname = document.getElementById('nickname').value;
-            const message = document.getElementById('chat-input').value;
-            if (!nickname) { alert('Сначала войди в аккаунт!'); return; }
-            
-            await supabase.from('chat').insert([{ sender: nickname, message: message }]);
-            document.getElementById('chat-input').value = '';
-        }
-        // Функция для загрузки сообщений из базы
-        async function loadMessages() {
-            const { data, error } = await supabase
-                .from('chat')
-                .select('*')
-                .order('created_at', { ascending: true }); // сортировка по времени
-
-            if (data) {
-                const chatContainer = document.getElementById('chat-messages');
-                chatContainer.innerHTML = ''; // очищаем чат перед обновлением
-                data.forEach(msg => {
-                    chatContainer.innerHTML += `<div><strong>${msg.sender}:</strong> ${msg.message}</div>`;
-                });
-            }
-        }
-
-        // Запускаем обновление чата каждые 2 секунды
-        setInterval(loadMessages, 2000);
-    </script>
-    
 </body>
 </html>
