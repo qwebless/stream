@@ -2,50 +2,95 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Вход на сайт</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Стрим-сервис</title>
     <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; padding-top: 100px; background: #f0f2f5; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; }
+        
+        /* Стили для плашки профиля */
+        #profile-header {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .hidden { display: none !important; }
+        
+        #content { padding: 80px 20px; text-align: center; }
+        button { cursor: pointer; padding: 8px 16px; border-radius: 5px; border: 1px solid #ccc; background: #fff; }
+        button:hover { background: #f9f9f9; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>Стрим-сервис</h2>
-    <button id="login">Войти через Google</button>
-</div>
+    <div id="profile-header">
+        <span id="user-info">Не в сети</span>
+        <button id="login-btn">Войти</button>
+        <button id="logout-btn" class="hidden">Выйти</button>
+    </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    <div id="content" class="hidden">
+        <h2>Добро пожаловать в приватную зону стрима!</h2>
+        <p>Тут будет твой видеоплеер.</p>
+    </div>
 
-    // --- СЮДА ВСТАВЛЯЙ СВОИ КЛЮЧИ ИЗ КОНСОЛИ ---
-   const firebaseConfig = {
-  apiKey: "AIzaSyDMFw62BVm7Y12P8PVftSBayAZJUnpTgb0",
-  authDomain: "fatmonkey-cd4b8.firebaseapp.com",
-  projectId: "fatmonkey-cd4b8",
-  storageBucket: "fatmonkey-cd4b8.firebasestorage.app",
-  messagingSenderId: "540431910490",
-  appId: "1:540431910490:web:2235bd68684fabb26e3a63",
-  measurementId: "G-BNS4Y65D36"
-};
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
+        // Твоя конфигурация
+        const firebaseConfig = {
+            apiKey: "AIzaSyDMFw62BVm7Y12P8PVftSBayAZJUnpTgb0",
+            authDomain: "fatmonkey-cd4b8.firebaseapp.com",
+            projectId: "fatmonkey-cd4b8",
+            storageBucket: "fatmonkey-cd4b8.firebasestorage.app",
+            messagingSenderId: "540431910490",
+            appId: "1:540431910490:web:2235bd68684fabb26e3a63",
+            measurementId: "G-BNS4Y65D36"
+        };
 
-    document.getElementById('login').addEventListener('click', () => {
-        signInWithPopup(auth, provider)
-            .then((result) => {
-                console.log("Успех!", result.user);
-                alert("Привет, " + result.user.displayName);
-            })
-            .catch((error) => {
-                console.error("Ошибка:", error);
-                alert("Не вышло: " + error.message);
-            });
-    });
-</script>
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
 
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const userInfo = document.getElementById('user-info');
+        const content = document.getElementById('content');
+
+        // Слушатель состояния входа
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Если залогинен
+                userInfo.innerText = `Привет, ${user.displayName}`;
+                loginBtn.classList.add('hidden');
+                logoutBtn.classList.remove('hidden');
+                content.classList.remove('hidden');
+            } else {
+                // Если не залогинен
+                userInfo.innerText = "Не в сети";
+                loginBtn.classList.remove('hidden');
+                logoutBtn.classList.add('hidden');
+                content.classList.add('hidden');
+            }
+        });
+
+        // События кнопок
+        loginBtn.addEventListener('click', () => {
+            signInWithPopup(auth, provider).catch(err => console.error(err));
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            signOut(auth);
+        });
+    </script>
 </body>
 </html>
