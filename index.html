@@ -5,31 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stream Platform</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-    <!-- Шапка с авторизацией и профилем -->
     <header class="header">
         <div class="logo">BRO.STREAM</div>
         <div class="user-panel">
-            <!-- Тут будет виджет логина через Telegram -->
-            <button class="tg-login-btn">Войти через Telegram</button>
-            
-            <!-- Этот блок покажем, когда юзер зайдет, чтобы он мог менять ник/аву -->
-            <!-- 
-            <div class="profile-setup">
-                <img src="default-avatar.png" alt="Аватар" class="avatar-preview">
-                <span class="nickname">User123</span>
-                <button class="edit-profile-btn">⚙️</button>
-            </div> 
-            -->
+            <div id="auth-form">
+                <input type="text" id="nickname" placeholder="Никнейм">
+                <input type="password" id="password" placeholder="Пароль">
+                <button onclick="handleAuth()">Войти / Регистрация</button>
+            </div>
         </div>
     </header>
 
-    <!-- Основной контент -->
     <main class="container">
-        
-        <!-- Блок с плеером -->
         <div class="player-section">
             <div class="video-placeholder">
                 <span>Плеер будет здесь</span>
@@ -40,19 +31,43 @@
             </div>
         </div>
 
-        <!-- Блок чата -->
         <div class="chat-section">
             <div class="chat-messages">
                 <div class="message"><strong>Admin:</strong> Всем привет, стрим скоро начнется!</div>
-                <div class="message"><strong>Viewer1:</strong> Ждем!</div>
             </div>
             <div class="chat-input-area">
                 <input type="text" placeholder="Написать в чат..." class="chat-input">
                 <button class="send-btn">Отправить</button>
             </div>
         </div>
-
     </main>
 
+    <script>
+        // Твои настройки
+        const supabaseUrl = 'https://duqfaqvamnplkohsmtin.supabase.co';
+        const supabaseKey = 'sb_publishable_b294NCNpkgQ0eJlvmo9A_yvcegY'; // Взял из твоего скрина
+        const supabase = supabaseClient.createClient(supabaseUrl, supabaseKey);
+
+        async function handleAuth() {
+            const nickname = document.getElementById('nickname').value;
+            const password = document.getElementById('password').value;
+
+            if (!nickname || !password) {
+                alert('Введите ник и пароль!');
+                return;
+            }
+
+            // Отправляем данные в таблицу users
+            const { data, error } = await supabase
+                .from('users')
+                .insert([{ nickname: nickname, password: password }]);
+
+            if (error) {
+                alert('Ошибка: ' + error.message);
+            } else {
+                alert('Успешно! Ты в базе данных.');
+            }
+        }
+    </script>
 </body>
 </html>
