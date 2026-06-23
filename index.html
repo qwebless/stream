@@ -6,6 +6,15 @@
     <title>Стрим-сервис</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; }
+
+        <div id="setup-modal" style="display:none; position:fixed; top:20%; left:30%; background:white; padding:20px; border:1px solid #ccc; z-index:999;">
+    <h3>Заверши регистрацию</h3>
+    <input type="text" id="setup-name" placeholder="Выбери ник">
+    <br><br>
+    <input type="file" id="setup-avatar" accept="image/*">
+    <br><br>
+    <button id="save-profile-btn">Сохранить</button>
+</div>
         
         /* Стили для плашки профиля */
         #profile-header {
