@@ -4,50 +4,52 @@
     <meta charset="UTF-8">
     <title>Стрим-сервис</title>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; margin: 0; display: flex; height: 100vh; }
+        body { font-family: sans-serif; background: #f0f2f5; margin: 0; height: 100vh; }
         .hidden { display: none !important; }
         
-        /* Боковая панель */
-        #sidebar { width: 250px; background: #ffffff; border-right: 1px solid #ddd; padding: 20px; }
+        /* Экран входа (по центру) */
+        #auth-screen { display: flex; justify-content: center; align-items: center; height: 100vh; }
         
-        /* Центр */
-        #main-content { flex-grow: 1; padding: 50px; display: flex; flex-direction: column; align-items: center; }
+        /* Основной интерфейс */
+        #app-screen { display: flex; height: 100vh; }
+        #sidebar { width: 200px; background: #ffffff; border-right: 1px solid #ddd; padding: 20px; }
+        #main-content { flex-grow: 1; padding: 50px; position: relative; }
         
-        /* Хедер справа */
-        #profile-header { position: fixed; top: 15px; right: 20px; display: flex; align-items: center; gap: 15px; }
+        /* Хедер профиля */
+        #profile-header { position: absolute; top: 15px; right: 20px; display: flex; align-items: center; gap: 15px; }
         
         /* Профиль */
-        .profile-card { text-align: center; width: 100%; max-width: 400px; }
+        .profile-card { text-align: center; max-width: 400px; margin: 0 auto; }
         #user-nick { font-size: 32px; font-weight: bold; margin-bottom: 10px; }
-        #bio-text { color: #555; margin-bottom: 20px; cursor: pointer; border: 1px dashed transparent; padding: 5px; }
-        #bio-text:hover { border: 1px dashed #ccc; }
         
         /* Модалка */
-        #setup-modal { display: none; position: fixed; top: 30%; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.2); }
+        #setup-modal { display: none; position: fixed; top: 30%; left: 40%; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.2); z-index: 1000; }
         .logout-btn { background: none; border: none; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div id="sidebar">
-        <h3>Каналы</h3>
-        <p># общий</p>
-        <p># игры</p>
-        <p># музыка</p>
+    <div id="auth-screen">
+        <button id="login-btn" style="padding: 15px 30px; font-size: 18px;">Войти через Google</button>
     </div>
 
-    <div id="main-content">
-        <div id="profile-header">
-            <span id="header-nick"></span>
-            <button id="logout-btn" class="hidden logout-btn">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
-            </button>
-            <button id="login-btn">Войти</button>
+    <div id="app-screen" class="hidden">
+        <div id="sidebar">
+            <h3>Каналы</h3>
         </div>
+        
+        <div id="main-content">
+            <div id="profile-header">
+                <span id="header-nick"></span>
+                <button id="logout-btn" class="logout-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+                </button>
+            </div>
 
-        <div id="profile-view" class="profile-card hidden">
-            <h1 id="user-nick"></h1>
-            <div id="bio-text" onclick="editBio()">Нажми, чтобы добавить описание (Bio)...</div>
+            <div class="profile-card">
+                <h1 id="user-nick"></h1>
+                <p>Тут будет твое Био (можно добавить позже)</p>
+            </div>
         </div>
     </div>
 
@@ -75,50 +77,37 @@
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        // Элементы
-        const loginBtn = document.getElementById('login-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const profileView = document.getElementById('profile-view');
-        const userNick = document.getElementById('user-nick');
-        const headerNick = document.getElementById('header-nick');
+        const authScreen = document.getElementById('auth-screen');
+        const appScreen = document.getElementById('app-screen');
         const setupModal = document.getElementById('setup-modal');
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                loginBtn.classList.add('hidden');
-                logoutBtn.classList.remove('hidden');
-                profileView.classList.remove('hidden');
+                // Если зашли: прячем экран входа, показываем приложение
+                authScreen.classList.add('hidden');
+                appScreen.classList.remove('hidden');
 
                 if (user.displayName) {
-                    userNick.innerText = user.displayName;
-                    headerNick.innerText = user.displayName;
+                    document.getElementById('user-nick').innerText = user.displayName;
+                    document.getElementById('header-nick').innerText = user.displayName;
                     setupModal.style.display = 'none';
-                    // Загружаем Био из памяти браузера
-                    const savedBio = localStorage.getItem('bio_' + user.uid);
-                    if (savedBio) document.getElementById('bio-text').innerText = savedBio;
                 } else {
                     setupModal.style.display = 'block';
                 }
             } else {
-                loginBtn.classList.remove('hidden');
-                logoutBtn.classList.add('hidden');
-                profileView.classList.add('hidden');
+                // Если вышли: показываем экран входа
+                authScreen.classList.remove('hidden');
+                appScreen.classList.add('hidden');
+                setupModal.style.display = 'none';
             }
         });
 
-        window.editBio = () => {
-            const newBio = prompt("Редактировать Bio:", document.getElementById('bio-text').innerText);
-            if (newBio !== null) {
-                document.getElementById('bio-text').innerText = newBio;
-                localStorage.setItem('bio_' + auth.currentUser.uid, newBio);
-            }
-        };
-
-        loginBtn.addEventListener('click', () => signInWithPopup(auth, provider));
-        logoutBtn.addEventListener('click', () => signOut(auth));
+        document.getElementById('login-btn').addEventListener('click', () => signInWithPopup(auth, provider));
+        document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+        
         document.getElementById('save-name-btn').addEventListener('click', async () => {
             const name = document.getElementById('setup-name').value;
-            if (name) {
+            if (name.trim()) {
                 await updateProfile(auth.currentUser, { displayName: name });
                 location.reload();
             }
