@@ -2,40 +2,15 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Стрим-сервис</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; }
-
-        <div id="setup-modal" style="display:none; position:fixed; top:20%; left:30%; background:white; padding:20px; border:1px solid #ccc; z-index:999;">
-    <h3>Заверши регистрацию</h3>
-    <input type="text" id="setup-name" placeholder="Выбери ник">
-    <br><br>
-    <input type="file" id="setup-avatar" accept="image/*">
-    <br><br>
-    <button id="save-profile-btn">Сохранить</button>
-</div>
-        
-        /* Стили для плашки профиля */
-        #profile-header {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            z-index: 1000;
-        }
-
+        body { font-family: sans-serif; background: #f0f2f5; margin: 0; }
         .hidden { display: none !important; }
         
+        #profile-header { position: fixed; top: 10px; right: 10px; background: white; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 15px; z-index: 1000; }
+        
+        #setup-modal { display: none; position: fixed; top: 20%; left: 35%; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.2); z-index: 1000; }
         #content { padding: 80px 20px; text-align: center; }
-        button { cursor: pointer; padding: 8px 16px; border-radius: 5px; border: 1px solid #ccc; background: #fff; }
-        button:hover { background: #f9f9f9; }
     </style>
 </head>
 <body>
@@ -46,16 +21,25 @@
         <button id="logout-btn" class="hidden">Выйти</button>
     </div>
 
+    <div id="setup-modal">
+        <h3>Заверши регистрацию</h3>
+        <input type="text" id="setup-name" placeholder="Твой ник">
+        <br><br>
+        <input type="file" id="setup-avatar" accept="image/*">
+        <br><br>
+        <button id="save-profile-btn">Сохранить</button>
+    </div>
+
     <div id="content" class="hidden">
-        <h2>Добро пожаловать в приватную зону стрима!</h2>
-        <p>Тут будет твой видеоплеер.</p>
+        <h2>Добро пожаловать в приватную зону!</h2>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-        // Твоя конфигурация
+        // Твои ключи вставлены
         const firebaseConfig = {
             apiKey: "AIzaSyDMFw62BVm7Y12P8PVftSBayAZJUnpTgb0",
             authDomain: "fatmonkey-cd4b8.firebaseapp.com",
@@ -68,23 +52,22 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const storage = getStorage();
         const provider = new GoogleAuthProvider();
 
         const loginBtn = document.getElementById('login-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const userInfo = document.getElementById('user-info');
         const content = document.getElementById('content');
+        const setupModal = document.getElementById('setup-modal');
 
-        // Слушатель состояния входа
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // Если залогинен
-                userInfo.innerText = `Привет, ${user.displayName}`;
+                userInfo.innerText = `Привет, ${user.displayName || "гость"}`;
                 loginBtn.classList.add('hidden');
                 logoutBtn.classList.remove('hidden');
                 content.classList.remove('hidden');
             } else {
-                // Если не залогинен
                 userInfo.innerText = "Не в сети";
                 loginBtn.classList.remove('hidden');
                 logoutBtn.classList.add('hidden');
@@ -92,13 +75,39 @@
             }
         });
 
-        // События кнопок
         loginBtn.addEventListener('click', () => {
-            signInWithPopup(auth, provider).catch(err => console.error(err));
+            signInWithPopup(auth, provider)
+                .then(() => setupModal.style.display = 'block')
+                .catch(err => console.error(err));
         });
 
-        logoutBtn.addEventListener('click', () => {
-            signOut(auth);
+        logoutBtn.addEventListener('click', () => signOut(auth));
+
+        document.getElementById('save-profile-btn').addEventListener('click', async () => {
+            const user = auth.currentUser;
+            const newName = document.getElementById('setup-name').value;
+            const fileInput = document.getElementById('setup-avatar');
+            let photoURL = user.photoURL;
+
+            try {
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const storageRef = ref(storage, 'avatars/' + user.uid);
+                    await uploadBytes(storageRef, file);
+                    photoURL = await getDownloadURL(storageRef);
+                }
+
+                await updateProfile(user, {
+                    displayName: newName || user.displayName,
+                    photoURL: photoURL
+                });
+
+                alert("Готово!");
+                setupModal.style.display = 'none';
+                location.reload(); 
+            } catch (err) {
+                alert("Ошибка: " + err.message);
+            }
         });
     </script>
 </body>
