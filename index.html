@@ -8,9 +8,7 @@
         .hidden { display: none !important; }
         
         #profile-header { position: fixed; top: 10px; right: 10px; background: white; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 15px; z-index: 1000; }
-        
         #setup-modal { display: none; position: fixed; top: 20%; left: 35%; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.2); z-index: 1000; }
-        #content { padding: 80px 20px; text-align: center; }
     </style>
 </head>
 <body>
@@ -22,24 +20,20 @@
     </div>
 
     <div id="setup-modal">
-        <h3>Заверши регистрацию</h3>
+        <h3>Придумай ник</h3>
         <input type="text" id="setup-name" placeholder="Твой ник">
         <br><br>
-        <input type="file" id="setup-avatar" accept="image/*">
-        <br><br>
-        <button id="save-profile-btn">Сохранить</button>
+        <button id="save-name-btn">Сохранить</button>
     </div>
 
-    <div id="content" class="hidden">
-        <h2>Добро пожаловать в приватную зону!</h2>
+    <div id="content" class="hidden" style="padding: 80px 20px;">
+        <h2>Ты в системе!</h2>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-        // Твои ключи вставлены
         const firebaseConfig = {
             apiKey: "AIzaSyDMFw62BVm7Y12P8PVftSBayAZJUnpTgb0",
             authDomain: "fatmonkey-cd4b8.firebaseapp.com",
@@ -52,7 +46,6 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const storage = getStorage();
         const provider = new GoogleAuthProvider();
 
         const loginBtn = document.getElementById('login-btn');
@@ -61,52 +54,48 @@
         const content = document.getElementById('content');
         const setupModal = document.getElementById('setup-modal');
 
+        // Слушатель состояния
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                userInfo.innerText = `Привет, ${user.displayName || "гость"}`;
+                // Если юзер залогинен
                 loginBtn.classList.add('hidden');
                 logoutBtn.classList.remove('hidden');
                 content.classList.remove('hidden');
+
+                // Проверяем: если displayName (ник) пустой — просим ввести
+                if (!user.displayName) {
+                    setupModal.style.display = 'block';
+                    userInfo.innerText = "Нужен ник!";
+                } else {
+                    userInfo.innerText = `Привет, ${user.displayName}`;
+                    setupModal.style.display = 'none';
+                }
             } else {
+                // Если не залогинен
                 userInfo.innerText = "Не в сети";
                 loginBtn.classList.remove('hidden');
                 logoutBtn.classList.add('hidden');
                 content.classList.add('hidden');
+                setupModal.style.display = 'none';
             }
         });
 
         loginBtn.addEventListener('click', () => {
-            signInWithPopup(auth, provider)
-                .then(() => setupModal.style.display = 'block')
-                .catch(err => console.error(err));
+            signInWithPopup(auth, provider).catch(err => console.error(err));
         });
 
         logoutBtn.addEventListener('click', () => signOut(auth));
 
-        document.getElementById('save-profile-btn').addEventListener('click', async () => {
+        // Сохранение только ника
+        document.getElementById('save-name-btn').addEventListener('click', async () => {
             const user = auth.currentUser;
             const newName = document.getElementById('setup-name').value;
-            const fileInput = document.getElementById('setup-avatar');
-            let photoURL = user.photoURL;
 
-            try {
-                if (fileInput.files.length > 0) {
-                    const file = fileInput.files[0];
-                    const storageRef = ref(storage, 'avatars/' + user.uid);
-                    await uploadBytes(storageRef, file);
-                    photoURL = await getDownloadURL(storageRef);
-                }
-
-                await updateProfile(user, {
-                    displayName: newName || user.displayName,
-                    photoURL: photoURL
-                });
-
-                alert("Готово!");
-                setupModal.style.display = 'none';
-                location.reload(); 
-            } catch (err) {
-                alert("Ошибка: " + err.message);
+            if (newName.length > 0) {
+                await updateProfile(user, { displayName: newName });
+                location.reload(); // Перезагрузка, чтобы обновить состояние
+            } else {
+                alert("Введите ник!");
             }
         });
     </script>
