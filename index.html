@@ -8,6 +8,8 @@
         .hidden { display: none !important; }
         
         #profile-header { position: fixed; top: 10px; right: 10px; background: white; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 15px; z-index: 1000; }
+        
+        /* Модальное окно */
         #setup-modal { display: none; position: fixed; top: 20%; left: 35%; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.2); z-index: 1000; }
     </style>
 </head>
@@ -20,7 +22,7 @@
     </div>
 
     <div id="setup-modal">
-        <h3>Придумай ник</h3>
+        <h3>Установи ник</h3>
         <input type="text" id="setup-name" placeholder="Твой ник">
         <br><br>
         <button id="save-name-btn">Сохранить</button>
@@ -54,24 +56,22 @@
         const content = document.getElementById('content');
         const setupModal = document.getElementById('setup-modal');
 
-        // Слушатель состояния
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // Если юзер залогинен
                 loginBtn.classList.add('hidden');
                 logoutBtn.classList.remove('hidden');
                 content.classList.remove('hidden');
 
-                // Проверяем: если displayName (ник) пустой — просим ввести
-                if (!user.displayName) {
-                    setupModal.style.display = 'block';
-                    userInfo.innerText = "Нужен ник!";
-                } else {
+                // Логика: если ник уже есть — просто показываем его, окно не трогаем.
+                // Если ника нет (пустой) — показываем окно.
+                if (user.displayName) {
                     userInfo.innerText = `Привет, ${user.displayName}`;
                     setupModal.style.display = 'none';
+                } else {
+                    setupModal.style.display = 'block';
+                    userInfo.innerText = "Нужен ник!";
                 }
             } else {
-                // Если не залогинен
                 userInfo.innerText = "Не в сети";
                 loginBtn.classList.remove('hidden');
                 logoutBtn.classList.add('hidden');
@@ -86,14 +86,13 @@
 
         logoutBtn.addEventListener('click', () => signOut(auth));
 
-        // Сохранение только ника
         document.getElementById('save-name-btn').addEventListener('click', async () => {
             const user = auth.currentUser;
             const newName = document.getElementById('setup-name').value;
 
-            if (newName.length > 0) {
+            if (newName.trim().length > 0) {
                 await updateProfile(user, { displayName: newName });
-                location.reload(); // Перезагрузка, чтобы обновить состояние
+                location.reload(); 
             } else {
                 alert("Введите ник!");
             }
